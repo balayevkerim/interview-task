@@ -22,67 +22,64 @@ export default function Home() {
   const [priceFilterValue, setPriceFilterValue] = useState('');
   const [ratingFilterValue, setRatingFilterValue] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const [skip, setSkipCount] =  useState(0) 
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [skip]);
+
+  useEffect(() => {
+
+    let filtered = [...products];
+    // Apply brand filter if selected
+    if (filterBrandValue !== '') {
+      filtered = filtered.filter((product) => product.brand === filterBrandValue);
+    }
+
+    // Apply price filter if selected
+    if (priceFilterValue !== '') {
+      const price = parseInt(priceFilterValue);
+      filtered = filtered.filter((product) => product.price <= price);
+    }
+
+    // Apply rating filter if selected
+    if (ratingFilterValue !== '') {
+      const rating = parseInt(ratingFilterValue);
+      filtered = filtered.filter((product) => product.rating <= rating);
+    }
+
+    setFilteredProducts(filtered);
+  }, [filterBrandValue, priceFilterValue, ratingFilterValue])
+
 
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/products'); 
+      const response = await fetch(`/api/products?skip=${skip}`);
       const data = await response.json();
-      setProducts(data);
-      setFilteredProducts(data);
+      let combinedProducts = [...products,...data]
+      setProducts(combinedProducts);
+      setFilteredProducts(combinedProducts);
       setLoading(false);
-      const brandOptions = data.map(p => p.brand)
+      const brandOptions = combinedProducts.map(p => p.brand)
       const noDuplicatedBrands = [...new Set(brandOptions)];
       setBrandOptions(noDuplicatedBrands)
     } catch (error) {
       console.error('Error fetching products:', error);
     }
   };
-  const applyFilters = () => {
-    let filtered = [...products];
-    console.log('filtered products ', filtered)
-    console.log(filterBrandValue, priceFilterValue)
-    // Apply brand filter if selected
-    if (filterBrandValue !== '') {
-      filtered = filtered.filter((product) => product.brand === filterBrandValue);
-      console.log('filter', filtered)
-    }
 
-    // Apply price filter if selected
-    if (priceFilterValue !== '') {
-      const price = parseInt(priceFilterValue);
-      filtered = filtered.filter((product) => product.price >= price);
-    }
-
-    // Apply rating filter if selected
-    if (ratingFilterValue !== '') {
-      const rating = parseInt(ratingFilterValue);
-      filtered = filtered.filter((product) => product.rating >= rating);
-    }
-
-    setFilteredProducts(filtered);
-  };
   const handleFilterChange = (e) => {
     const value = e.target.value;
-    console.log(value)
-    setBrandFilterValue(value);
-    applyFilters();
+    setBrandFilterValue(value)
   };
   const handleRatingFilterChange = (e) => {
     const value = e.target.value;
     setRatingFilterValue(value);
-    applyFilters()
   }
   const handlePriceFilterChange = (e) => {
-    console.log(e.target.value)
     const value = e.target.value;
     setPriceFilterValue(value);
-    applyFilters()
   }
   const handleSortChange = (e) => {
     const value = e.target.value;
@@ -118,6 +115,7 @@ export default function Home() {
     setFilteredProducts(sorted);
   };
 
+
   return (
 
     <div className={styles.container}>
@@ -129,35 +127,21 @@ export default function Home() {
       </Head>
       <h1>Product List</h1>
       <div className={styles.filterContainer}>
-        {/* <BrandFilter filterValue={filterBrandValue} brandOptions={brandOptions} handleFilterChange={handleFilterChange} />
-         */}
-          <div>
-      <label htmlFor="filter">Filter by Brand:</label>
-      <select id="filter" value={filterBrandValue} onChange={handleFilterChange}>
-        <option value="">All</option>
-
-        {brandOptions && brandOptions.map(brand => (
-          <option key={brand} value={brand}>{brand}</option>
-        ))}
-      </select>
-    </div>
+        <BrandFilter filterValue={filterBrandValue} brandOptions={brandOptions} handleFilterChange={handleFilterChange} />
         <PriceFilter priceFilterValue={priceFilterValue} handlePriceFilterChange={handlePriceFilterChange} />
         <RatingFilter ratingFilterValue={ratingFilterValue} handleRatingFilterChange={handleRatingFilterChange} />
         <SortFilter sortOrder={sortOrder} handleSortChange={handleSortChange} />
       </div>
-
       {loading ? <Spinner /> : (
         <>
           <ProductContainer>
-            {filteredProducts.map((product) => (
+            {filteredProducts.length > 0 ? filteredProducts.map((product) => (
               <ProductItem product={product} key={product.id} />
-            ))}
+            )): <div className={styles.emptyResult}>No result for this critearia in current loaded result</div>}
           </ProductContainer>
-          <Button>Load More</Button>
+          <Button onClick={()=>setSkipCount(skip+30)}>Load More</Button>
         </>
-
       )}
-
     </div>
   );
 }
