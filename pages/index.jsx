@@ -19,8 +19,10 @@ export default function Home() {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [sortOrder, setSortOrder] = useState('title');
   const [filterBrandValue, setBrandFilterValue] = useState('');
-  const [priceFilterValue, setPriceFilterValue] = useState('');
+  // const [priceFilterValue, setPriceFilterValue] = useState('');
   const [ratingFilterValue, setRatingFilterValue] = useState('');
+  const [selectedMinPrice, setSelectedMinPrice] = useState('');
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState('');
   const [loading, setLoading] = useState(false);
   const [skip, setSkipCount] =  useState(0) 
 
@@ -29,7 +31,7 @@ export default function Home() {
   }, [skip]);
 
   useEffect(() => {
-
+  console.log('called',selectedMaxPrice,selectedMinPrice)
     let filtered = [...products];
     // Apply brand filter if selected
     if (filterBrandValue !== '') {
@@ -37,10 +39,31 @@ export default function Home() {
     }
 
     // Apply price filter if selected
-    if (priceFilterValue !== '') {
+    /* if (priceFilterValue !== '') {
       const price = parseInt(priceFilterValue);
       filtered = filtered.filter((product) => product.price <= price);
+    } */
+    if (selectedMinPrice) {
+      filtered = filtered.filter(product => {
+        // Filter products with price above the selected minimum price
+        return product.price >= selectedMinPrice;
+      });
     }
+
+    if (selectedMaxPrice && selectedMinPrice) {
+      filtered = filtered.filter(product => {
+        // Filter products with price below or equal to the selected maximum price
+        return product.price <= selectedMaxPrice && product.price >=selectedMinPrice;
+      });
+    }
+    if (selectedMaxPrice) {
+      filtered = filtered.filter(product => {
+        // Filter products with price above the selected minimum price
+        return product.price <= selectedMaxPrice;
+      });
+    }
+
+
 
     // Apply rating filter if selected
     if (ratingFilterValue !== '') {
@@ -49,7 +72,7 @@ export default function Home() {
     }
 
     setFilteredProducts(filtered);
-  }, [filterBrandValue, priceFilterValue, ratingFilterValue])
+  }, [filterBrandValue, selectedMinPrice,selectedMaxPrice, ratingFilterValue])
 
 
   const fetchProducts = async () => {
@@ -115,7 +138,13 @@ export default function Home() {
     setFilteredProducts(sorted);
   };
 
-
+const resetFilters = () =>{
+  setBrandFilterValue('')
+  setSelectedMaxPrice('');
+  setSelectedMinPrice('');
+  setRatingFilterValue('');
+  setSortOrder('title')
+}
   return (
 
     <div className={styles.container}>
@@ -128,9 +157,15 @@ export default function Home() {
       <h1>Product List</h1>
       <div className={styles.filterContainer}>
         <BrandFilter filterValue={filterBrandValue} brandOptions={brandOptions} handleFilterChange={handleFilterChange} />
-        <PriceFilter priceFilterValue={priceFilterValue} handlePriceFilterChange={handlePriceFilterChange} />
-        <RatingFilter ratingFilterValue={ratingFilterValue} handleRatingFilterChange={handleRatingFilterChange} />
+        <PriceFilter 
+        selectedMaxPrice={selectedMaxPrice}
+         selectedMinPrice={selectedMinPrice}
+         setSelectedMaxPrice={setSelectedMaxPrice}
+         setSelectedMinPrice={setSelectedMinPrice}
+         />
+        <RatingFilter ratingFilter={ratingFilterValue} handleRatingFilterChange={handleRatingFilterChange} />
         <SortFilter sortOrder={sortOrder} handleSortChange={handleSortChange} />
+        <Button buttonType='inverted' onClick={resetFilters}>Reset Filters</Button>
       </div>
       {loading ? <Spinner /> : (
         <>

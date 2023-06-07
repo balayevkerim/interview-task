@@ -30,3 +30,9 @@
     }
   }
   
+  .price-container {
+    display: flex;
+  }
+  .labelPrice{
+    margin: auto;
+  }
